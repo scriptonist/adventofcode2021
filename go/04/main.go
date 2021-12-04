@@ -20,6 +20,7 @@ func parseInput(file string) ([]int, []board) {
 			s := [][]int{}
 			return &s
 		}(),
+		id: 0,
 	}
 	for i := 2; i < len(lines); i++ {
 		if len(lines[i]) == 0 {
@@ -29,6 +30,7 @@ func parseInput(file string) ([]int, []board) {
 					s := [][]int{}
 					return &s
 				}(),
+				id: curBoard.id + 1,
 			}
 			continue
 		}
@@ -67,10 +69,7 @@ func genNumArrayFromString(s string, sep string) []int {
 func part1(picks []int, boards []board) int {
 	for _, pick := range picks {
 		markBoards(boards, pick)
-		fmt.Println(pick)
-		printBoards(boards)
-		fmt.Println()
-		if score := checkBoards(boards); score != -1 {
+		if score, _ := checkBoards(boards, nil); score != -1 {
 			return score * pick
 		}
 	}
@@ -80,21 +79,31 @@ func part1(picks []int, boards []board) int {
 func part2(picks []int, boards []board) int {
 	lastScore := -1
 	lastNum := -1
+	var doneBoards = map[int]bool{}
+
 	for _, pick := range picks {
 		markBoards(boards, pick)
-		fmt.Println(pick)
-		printBoards(boards)
-		fmt.Println()
-		if score := checkBoards(boards); score != -1 {
+		if score, id := checkBoards(boards, doneBoards); score > 0 && !doneBoards[id] {
+			doneBoards[id] = true
 			lastScore = score
 			lastNum = pick
+
+			fmt.Println(pick)
+			printBoards(boards)
+			fmt.Println()
+		}
+		// fmt.Println(doneBoards)
+		if len(doneBoards) == len(boards) {
+			break
 		}
 	}
+	fmt.Println(lastScore, lastNum)
 	return lastScore * lastNum
 }
 
 type board struct {
 	items *[][]int
+	id    int
 }
 
 func (b *board) print() {
@@ -107,14 +116,17 @@ func (b *board) print() {
 	fmt.Println()
 }
 
-func checkBoards(boards []board) int {
+func checkBoards(boards []board, doneBoards map[int]bool) (int, int) {
 	for _, board := range boards {
+		if doneBoards != nil && doneBoards[board.id] {
+			continue
+		}
 		if found := checkBoard(board); found {
 			score := findScore(board)
-			return score
+			return score, board.id
 		}
 	}
-	return -1
+	return -1, -1
 }
 
 func printBoards(boards []board) {
@@ -130,8 +142,8 @@ func markBoards(boards []board, n int) {
 }
 
 func markBoard(board board, n int) {
-	for row, _ := range *board.items {
-		for col, _ := range (*board.items)[row] {
+	for row := range *board.items {
+		for col := range (*board.items)[row] {
 			if (*board.items)[row][col] == n {
 				(*board.items)[row][col] = -1
 			}
@@ -140,9 +152,24 @@ func markBoard(board board, n int) {
 }
 
 func checkBoard(board board) bool {
-	for row, _ := range *board.items {
+	if len(*board.items) <= 0 {
+		return false
+	}
+	for row := range *board.items {
 		found := true
 		for _, elem := range (*board.items)[row] {
+			if elem != -1 {
+				found = false
+			}
+		}
+		if found {
+			return true
+		}
+	}
+	for col := range (*board.items)[0] {
+		found := true
+		for row := range *board.items {
+			elem := (*board.items)[row][col]
 			if elem != -1 {
 				found = false
 			}
@@ -157,8 +184,8 @@ func checkBoard(board board) bool {
 
 func findScore(board board) int {
 	s := 0
-	for row, _ := range *board.items {
-		for col, _ := range (*board.items)[row] {
+	for row := range *board.items {
+		for col := range (*board.items)[row] {
 			if (*board.items)[row][col] != -1 {
 				s += (*board.items)[row][col]
 			}
@@ -168,7 +195,7 @@ func findScore(board board) int {
 }
 
 func main() {
-	picks, boards := parseInput("test.txt")
+	picks, boards := parseInput("input.txt")
 	fmt.Println(part1(picks, boards))
 	fmt.Println(part2(picks, boards))
 }
