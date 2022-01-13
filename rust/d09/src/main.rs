@@ -1,7 +1,4 @@
-use std::{
-    collections::{HashSet, LinkedList},
-    vec,
-};
+use std::collections::{HashSet, LinkedList};
 
 fn main() {
     let input = include_str!("../input.txt");
